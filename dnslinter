@@ -85,7 +85,7 @@ foreach my $range (@ipranges) {
         @addresses = map { inet_ntoa($_) } @addresses[ 4 .. $#addresses ];
         my $found = scalar grep( /^$ip$/, @addresses );
         if ( $found == 0 ) {
-            fail("No PTR present for $ip -> $hostname.");
+            fail("No PTR present for $hostname -> $ip.");
             $errors++;
         } else {
             okay("PTR present for $ip -> $hostname.");
