@@ -4,12 +4,10 @@ use strict;
 use warnings;
 use v5.10;
 
-use Data::Dumper;
 use File::Basename;
 use Getopt::Long::Descriptive;
 use IO::All;
 use Net::Netmask;
-use Net::IPv4Addr qw( :all );
 use Net::Ping;
 use Socket;
 
@@ -95,11 +93,11 @@ foreach my $range (@ipranges) {
     }
 }
 
-my $summary="Summary: $tested IPs tested, $okays okay, $errors errors";
-if ($ping){
-    $summary.=", $pingables pingable, $unpingables unpingable";
+my $summary = "Summary: $tested IPs tested, $okays okay, $errors errors";
+if ($ping) {
+    $summary .= ", $pingables pingable, $unpingables unpingable";
 }
-$summary.=".";
+$summary .= ".";
 verbose($summary);
 
 sub get_netblocks {
