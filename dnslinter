@@ -102,12 +102,13 @@ $summary .= ".";
 verbose($summary);
 
 sub get_netblocks {
-    my @blocks = ();
-
+    my @blocks   = ();
     my $networks = $opt->networks;
-    if ( -e "$networks " ) { }
 
-    else {
+    if ( -e "$networks" ) {
+        @blocks = io("$networks")->slurp;
+        chomp(@blocks);
+    } else {
         @blocks = split( /,/, $networks );
     }
 
