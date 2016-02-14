@@ -18,15 +18,16 @@ my ( $opt, $usage ) = describe_options(
     [ 'networks|n=s', 'A comma separated list of networks, or name of a file containing networks, one per line . ', { required => 1 } ],
     [ 'ping|p',       'Enable ping checks - requires root.' ],
     [ 'verbose|v',    'Be noisy' ],
-    [ 'erroneous|e',  'Report erroneous DNS mappings.' ],
-    [ 'correct|c',    'Report correct DNS mappings.' ],
+    [ 'fail|f',       'Report failing DNS mappings.' ],
+    [ 'okay|o',       'Report okay DNS mappings.' ],
 );
 
-my $network  = $opt->networks;
-my $ping     = $opt->ping;
-my $verbose  = $opt->verbose;
-my $erroneus = $opt->erroneous;
-my $correct  = $opt->correct;
+my $network = $opt->networks;
+my $ping    = $opt->ping;
+my $verbose = $opt->verbose;
+my $fail    = $opt->fail;
+my $okay    = $opt->okay;
+
 my $pinger;
 my $errors = 0;
 
@@ -37,7 +38,7 @@ eval {
 };
 
 if ( $@ =~ /icmp ping requires root privilege/ ) {
-    say "Ping checks require root privilege to run.";
+    fail('Ping checks require root privilege to run.');
     exit 1;
 }
 
@@ -49,7 +50,7 @@ foreach my $range (@ipranges) {
 
     for my $ip ( $block->enumerate ) {
 
-        if ( $size > 1 ) {
+        if ( $size > 2 ) {
             next if $ip eq $block->base();
             next if $ip eq $block->broadcast();
         }
@@ -60,7 +61,7 @@ foreach my $range (@ipranges) {
 
         if ($ping) {
             if ( $pinger->ping($ip) && ( !defined $hostname ) ) {
-                say "Error: $ip has no reverse record" if $erroneus;
+                fail("$ip has no reverse record");
                 $errors++;
                 next;
             }
@@ -68,18 +69,13 @@ foreach my $range (@ipranges) {
 
         next unless defined $hostname;
 
-        say "$ip -> $hostname";
-
         my @addresses = gethostbyname($hostname);
         @addresses = map { inet_ntoa($_) } @addresses[ 4 .. $#addresses ];
-        print Dumper @addresses;
         my $found = scalar grep( /^$ip$/, @addresses );
-        say $found;
         if ( $found == 0 ) {
-            say "No reverse for $ip to $hostname";
+            error("No PTR present for $ip -> $hostname.");
         } else {
-
-            #code
+            okay("PTR present for $ip -> $hostname.");
         }
     }
 }
@@ -95,4 +91,16 @@ sub get_netblocks {
     }
 
     return @blocks;
+}
+
+sub fail {
+    return unless $fail;
+    my $message = shift;
+    say "FAIL: $message";
+}
+
+sub okay {
+    return unless $okay;
+    my $message = shift;
+    say "OK: $message";
 }
