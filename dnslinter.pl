@@ -70,6 +70,17 @@ foreach my $range (@ipranges) {
 
         say "$ip -> $hostname";
 
+        my @addresses = gethostbyname($hostname);
+        @addresses = map { inet_ntoa($_) } @addresses[ 4 .. $#addresses ];
+        print Dumper @addresses;
+        my $found = scalar grep( /^$ip$/, @addresses );
+        say $found;
+        if ( $found == 0 ) {
+            say "No reverse for $ip to $hostname";
+        } else {
+
+            #code
+        }
     }
 }
 
