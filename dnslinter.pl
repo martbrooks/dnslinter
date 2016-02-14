@@ -18,7 +18,7 @@ my ( $opt, $usage ) = describe_options(
     [ 'networks|n=s', 'A comma separated list of networks, or name of a file containing networks, one per line . ', { required => 1 } ],
     [ 'ping|p',       'Enable ping checks - requires root.' ],
     [ 'verbose|v',    'Explain what is happening.' ],
-    [ 'fail|f',       'Report failing DNS mappings.' ],
+    [ 'fail|f',       'Report failing DNS mappings.',                                                               { default  => 1 } ],
     [ 'okay|o',       'Report okay DNS mappings.' ],
 );
 
@@ -29,7 +29,12 @@ my $fail    = $opt->fail;
 my $okay    = $opt->okay;
 
 my $pinger;
-my $errors = 0;
+
+my $errors      = 0;
+my $okays       = 0;
+my $pingables   = 0;
+my $unpingables = 0;
+my $tested      = 0;
 
 eval {
     if ($ping) {
@@ -57,20 +62,23 @@ foreach my $range (@ipranges) {
         }
 
         verbose("Pondering $ip.");
+        $tested++;
 
         my $hostname = gethostbyaddr( inet_aton($ip), AF_INET );
         if ($hostname) {
             verbose("$ip resolves to $hostname");
         }
 
-
         if ($ping) {
             verbose("Pinging $ip");
-            if ( $pinger->ping($ip) && ( !defined $hostname ) ) {
+            my $pinged = $pinger->ping($ip);
+            $pingables++ if $pinged;
+            if ( $pinged && ( !defined $hostname ) ) {
                 fail("$ip responds to pings but has no PTR.");
                 $errors++;
                 next;
             }
+            $unpingables++ unless $pinged;
         }
 
         next unless defined $hostname;
@@ -82,9 +90,17 @@ foreach my $range (@ipranges) {
             error("No PTR present for $ip -> $hostname.");
         } else {
             okay("PTR present for $ip -> $hostname.");
+            $okays++;
         }
     }
 }
+
+my $summary="Summary: $tested IPs tested, $okays okay, $errors errors";
+if ($ping){
+    $summary.=", $pingables pingable, $unpingables unpingable";
+}
+$summary.=".";
+verbose($summary);
 
 sub get_netblocks {
     my @blocks = ();
