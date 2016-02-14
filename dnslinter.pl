@@ -17,7 +17,7 @@ my ( $opt, $usage ) = describe_options(
     "%c %o",
     [ 'networks|n=s', 'A comma separated list of networks, or name of a file containing networks, one per line . ', { required => 1 } ],
     [ 'ping|p',       'Enable ping checks - requires root.' ],
-    [ 'verbose|v',    'Be noisy' ],
+    [ 'verbose|v',    'Explain what is happening.' ],
     [ 'fail|f',       'Report failing DNS mappings.' ],
     [ 'okay|o',       'Report okay DNS mappings.' ],
 );
@@ -45,6 +45,7 @@ if ( $@ =~ /icmp ping requires root privilege/ ) {
 my @ipranges = get_netblocks();
 
 foreach my $range (@ipranges) {
+    verbose("Processing '$range'.");
     my $block = new Net::Netmask($range);
     my $size  = $block->size;
 
@@ -55,13 +56,18 @@ foreach my $range (@ipranges) {
             next if $ip eq $block->broadcast();
         }
 
-        say "Checking $ip" if $verbose;
+        verbose("Pondering $ip.");
 
         my $hostname = gethostbyaddr( inet_aton($ip), AF_INET );
+        if ($hostname) {
+            verbose("$ip resolves to $hostname");
+        }
+
 
         if ($ping) {
+            verbose("Pinging $ip");
             if ( $pinger->ping($ip) && ( !defined $hostname ) ) {
-                fail("$ip has no reverse record");
+                fail("$ip responds to pings but has no PTR.");
                 $errors++;
                 next;
             }
@@ -94,13 +100,19 @@ sub get_netblocks {
 }
 
 sub fail {
-    return unless $fail;
+    return unless $fail || $verbose;
     my $message = shift;
     say "FAIL: $message";
 }
 
 sub okay {
-    return unless $okay;
+    return unless $okay || $verbose;
     my $message = shift;
     say "OK: $message";
+}
+
+sub verbose {
+    return unless $verbose;
+    my $message = shift;
+    say "INFO: $message";
 }
