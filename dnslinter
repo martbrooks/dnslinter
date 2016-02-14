@@ -13,10 +13,10 @@ use Socket;
 
 my ( $opt, $usage ) = describe_options(
     "%c %o",
-    [ 'networks|n=s', 'A comma separated list of networks, or name of a file containing networks, one per line . ', { required => 1 } ],
+    [ 'networks|n=s', 'A comma separated list of networks, or name of a file containing networks, one per line.', { required => 1 } ],
     [ 'ping|p',       'Enable ping checks - requires root.' ],
     [ 'verbose|v',    'Explain what is happening.' ],
-    [ 'fail|f',       'Report failing DNS mappings.',                                                               { default  => 1 } ],
+    [ 'fail|f',       'Report failing DNS mappings.',                                                             { default  => 1 } ],
     [ 'okay|o',       'Report okay DNS mappings.' ],
 );
 
