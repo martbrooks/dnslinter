@@ -7,9 +7,9 @@ out mismatches.  It will also ping hosts to find hosts with no DNS present.
 
 
 ```
-:~$ sudo ./dnslinter -n 10.19.41.0/24 -p
+:~$ sudo ./dnslinter -n 10.19.41.0/24 -p -s
 FAIL: 10.19.41.2 responds to pings but has no PTR.
-FAIL: 10.19.41.94 responds to pings but has no PTR.
 FAIL: 10.19.41.110 responds to pings but has no PTR.
+Summary: 254 IPs tested, 202 okay, 2 errors, 187 pingable, 67 unpingable.
 
 ```
