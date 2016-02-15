@@ -18,6 +18,7 @@ my ( $opt, $usage ) = describe_options(
     [ 'verbose|v',    'Explain what is happening.' ],
     [ 'fail|f',       'Report failing DNS mappings.',                                                             { default  => 1 } ],
     [ 'okay|o',       'Report okay DNS mappings.' ],
+    [ 'summary|s',    'Show a summary of findings.' ],
 );
 
 my $network = $opt->networks;
@@ -94,12 +95,14 @@ foreach my $range (@ipranges) {
     }
 }
 
-my $summary = "Summary: $tested IPs tested, $okays okay, $errors errors";
-if ($ping) {
-    $summary .= ", $pingables pingable, $unpingables unpingable";
+if ($summary) {
+    my $summary = "Summary: $tested IPs tested, $okays okay, $errors errors";
+    if ($ping) {
+        $summary .= ", $pingables pingable, $unpingables unpingable";
+    }
+    $summary .= ".";
+    say $summary;
 }
-$summary .= ".";
-verbose($summary);
 
 sub get_netblocks {
     my @blocks   = ();
