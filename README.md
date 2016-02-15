@@ -3,7 +3,7 @@ dnslinter - A DNS consistency checker
 
 This tool allows you to easily spot DNS consistency errors.  Given an IP range,
 or set of IP ranges, it will compare forward and reverse DNS entries and point
-out mismatches.  It will also ping hosts to find hosts with no DNS present.
+out mismatches.  It will also use ping to find hosts with no DNS present.
 
 
 ```
