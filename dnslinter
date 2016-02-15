@@ -26,6 +26,7 @@ my $ping    = $opt->ping;
 my $verbose = $opt->verbose;
 my $fail    = $opt->fail;
 my $okay    = $opt->okay;
+my $summary = $opt->summary;
 
 my $pinger;
 
@@ -96,12 +97,12 @@ foreach my $range (@ipranges) {
 }
 
 if ($summary) {
-    my $summary = "Summary: $tested IPs tested, $okays okay, $errors errors";
+    my $text = "Summary: $tested IPs tested, $okays okay, $errors errors";
     if ($ping) {
-        $summary .= ", $pingables pingable, $unpingables unpingable";
+        $text .= ", $pingables pingable, $unpingables unpingable";
     }
-    $summary .= ".";
-    say $summary;
+    $text .= ".";
+    say $text;
 }
 
 sub get_netblocks {
