@@ -97,7 +97,10 @@ foreach my $range (@ipranges) {
 }
 
 if ($summary) {
-    my $text = "Summary: $tested IPs tested, $okays okay, $errors errors";
+    my $text = "Summary: $tested IP";
+    $text .= $tested != 1 ? 's' : '';
+    $text .= " tested, $okays okay, $errors error";
+    $text .= $errors != 1 ? 's' : '';
     if ($ping) {
         $text .= ", $pingables pingable, $unpingables unpingable";
     }
