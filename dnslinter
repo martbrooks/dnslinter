@@ -10,7 +10,7 @@ use Getopt::Long::Descriptive;
 use IO::All;
 use NetAddr::IP qw(:lower);
 use Net::Ping;
-use Socket qw( getaddrinfo getnameinfo pack_sockaddr_in inet_aton );
+use Socket qw( getaddrinfo getnameinfo pack_sockaddr_in pack_sockaddr_in6 inet_pton AF_INET AF_INET6 NI_NAMEREQD );
 
 my ( $opt, $usage ) = describe_options(
     "%c %o",
@@ -63,8 +63,7 @@ foreach my $range (@ipranges) {
 
         verbose("Pondering $thisip.");
         $tested++;
-        my ( $err, @addrs ) = getnameinfo( pack_sockaddr_in( 0, inet_aton $thisip) );
-        my $hostname = $addrs[0];
+        my ( $err, $hostname, $port ) = getnameinfo( pack_sockaddr_in6( 0, inet_pton( AF_INET6, $thisip ) ), NI_NAMEREQD, NI_NAMEREQD );
         unless ($err) {
             verbose("$thisip resolves to $hostname");
         }
@@ -94,7 +93,6 @@ foreach my $range (@ipranges) {
         #    $okays++;
         #}
 
-        print "t: $thisip  l: " . $lastip->addr() . "\n";
         last if $thisip eq $lastip->addr();
     }
 }
