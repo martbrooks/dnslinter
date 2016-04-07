@@ -10,7 +10,7 @@ use Getopt::Long::Descriptive;
 use IO::All;
 use NetAddr::IP qw(:lower);
 use Net::Ping;
-use Socket qw( getaddrinfo getnameinfo );
+use Socket qw( getaddrinfo getnameinfo pack_sockaddr_in inet_aton );
 
 my ( $opt, $usage ) = describe_options(
     "%c %o",
@@ -56,10 +56,6 @@ foreach my $range (@ipranges) {
     my $thisrange = new NetAddr::IP($range);
     my $ip        = $thisrange->first();
     my $lastip    = $thisrange->last();
-    my $size      = $thisrange->num();
-    my $bcast     = $thisrange->broadcast->addr();
-    my $network   = $thisrange->broadcast->network();
-    $network =~ s/\/.*$//g;
 
     while (1) {
         my $thisip = $ip->addr;
@@ -67,14 +63,10 @@ foreach my $range (@ipranges) {
 
         verbose("Pondering $thisip.");
         $tested++;
-        my ( $err, @addrs ) = getnameinfo( $thisip, 0 );
+        my ( $err, @addrs ) = getnameinfo( pack_sockaddr_in( 0, inet_aton $thisip) );
+        my $hostname = $addrs[0];
         unless ($err) {
-            foreach my $record (@addrs) {
-                my $hostname = $record->{addr};
-                if ($hostname) {
-                    verbose("$thisip resolves to $hostname");
-                }
-            }
+            verbose("$thisip resolves to $hostname");
         }
 
         if ($ping) {
@@ -82,9 +74,8 @@ foreach my $range (@ipranges) {
             my $pinged = $pinger->ping($thisip);
             $pingables++ if $pinged;
 
-            #if ( $pinged && ( !defined $hostname ) ) {
-            if ($pinged) {
-                fail("$ip responds to pings but has no PTR.");
+            if ( $pinged && ( !defined $hostname ) ) {
+                fail("$thisip responds to pings but has no PTR.");
                 $errors++;
                 next;
             }
@@ -103,6 +94,7 @@ foreach my $range (@ipranges) {
         #    $okays++;
         #}
 
+        print "t: $thisip  l: " . $lastip->addr() . "\n";
         last if $thisip eq $lastip->addr();
     }
 }
