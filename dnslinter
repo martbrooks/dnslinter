@@ -4,12 +4,13 @@ use strict;
 use warnings;
 use v5.10;
 
+use Data::Dumper;
 use File::Basename;
 use Getopt::Long::Descriptive;
 use IO::All;
-use Net::Netmask;
+use NetAddr::IP qw(:lower);
 use Net::Ping;
-use Socket;
+use Socket qw( getaddrinfo getnameinfo );
 
 my ( $opt, $usage ) = describe_options(
     "%c %o",
@@ -51,29 +52,38 @@ my @ipranges = get_netblocks();
 
 foreach my $range (@ipranges) {
     verbose("Processing '$range'.");
-    my $block = new Net::Netmask($range);
-    my $size  = $block->size;
 
-    for my $ip ( $block->enumerate ) {
+    my $thisrange = new NetAddr::IP($range);
+    my $ip        = $thisrange->first();
+    my $lastip    = $thisrange->last();
+    my $size      = $thisrange->num();
+    my $bcast     = $thisrange->broadcast->addr();
+    my $network   = $thisrange->broadcast->network();
+    $network =~ s/\/.*$//g;
 
-        if ( $size > 2 ) {
-            next if $ip eq $block->base();
-            next if $ip eq $block->broadcast();
-        }
+    while (1) {
+        my $thisip = $ip->addr;
+        $ip++;
 
-        verbose("Pondering $ip.");
+        verbose("Pondering $thisip.");
         $tested++;
-
-        my $hostname = gethostbyaddr( inet_aton($ip), AF_INET );
-        if ($hostname) {
-            verbose("$ip resolves to $hostname");
+        my ( $err, @addrs ) = getnameinfo( $thisip, 0 );
+        unless ($err) {
+            foreach my $record (@addrs) {
+                my $hostname = $record->{addr};
+                if ($hostname) {
+                    verbose("$thisip resolves to $hostname");
+                }
+            }
         }
 
         if ($ping) {
-            verbose("Pinging $ip");
-            my $pinged = $pinger->ping($ip);
+            verbose("Pinging $thisip");
+            my $pinged = $pinger->ping($thisip);
             $pingables++ if $pinged;
-            if ( $pinged && ( !defined $hostname ) ) {
+
+            #if ( $pinged && ( !defined $hostname ) ) {
+            if ($pinged) {
                 fail("$ip responds to pings but has no PTR.");
                 $errors++;
                 next;
@@ -81,18 +91,19 @@ foreach my $range (@ipranges) {
             $unpingables++ unless $pinged;
         }
 
-        next unless defined $hostname;
+        #next unless defined $hostname;
 
-        my @addresses = gethostbyname($hostname);
-        @addresses = map { inet_ntoa($_) } @addresses[ 4 .. $#addresses ];
-        my $found = scalar grep( /^$ip$/, @addresses );
-        if ( $found == 0 ) {
-            fail("No PTR present for $hostname -> $ip.");
-            $errors++;
-        } else {
-            okay("PTR present for $ip -> $hostname.");
-            $okays++;
-        }
+        #@addresses = map { inet_ntoa($_) } @addresses[ 4 .. $#addresses ];
+        #my $found = scalar grep( /^$ip$/, @addresses );
+        #if ( $found == 0 ) {
+        #    fail("No PTR present for $hostname -> $ip.");
+        #    $errors++;
+        #} else {
+        #    okay("PTR present for $ip -> $hostname.");
+        #    $okays++;
+        #}
+
+        last if $thisip eq $lastip->addr();
     }
 }
 
