@@ -10,7 +10,7 @@ use Getopt::Long::Descriptive;
 use IO::All;
 use NetAddr::IP qw(:lower);
 use Net::Ping;
-use Socket qw( getaddrinfo getnameinfo pack_sockaddr_in pack_sockaddr_in6 inet_pton AF_INET AF_INET6 NI_NAMEREQD );
+use Socket qw(:DEFAULT getaddrinfo getnameinfo inet_pton NI_NAMEREQD NI_NUMERICHOST NIx_NOSERV);
 
 my ( $opt, $usage ) = describe_options(
     "%c %o",
@@ -56,10 +56,13 @@ foreach my $range (@ipranges) {
     my $thisrange = new NetAddr::IP($range);
     my $ip        = $thisrange->first();
     my $lastip    = $thisrange->last();
+    my $ipcount   = $thisrange->num();
 
-    while (1) {
-        my $thisip = $ip->addr;
-        $ip++;
+    warn $ipcount;
+
+    while ( $ipcount > 0 ) {
+        $ipcount--;
+        my $thisip = $ip->short();
 
         verbose("Pondering $thisip.");
         $tested++;
@@ -81,19 +84,26 @@ foreach my $range (@ipranges) {
             $unpingables++ unless $pinged;
         }
 
-        #next unless defined $hostname;
+        next unless defined $hostname;
 
-        #@addresses = map { inet_ntoa($_) } @addresses[ 4 .. $#addresses ];
-        #my $found = scalar grep( /^$ip$/, @addresses );
-        #if ( $found == 0 ) {
-        #    fail("No PTR present for $hostname -> $ip.");
-        #    $errors++;
-        #} else {
-        #    okay("PTR present for $ip -> $hostname.");
-        #    $okays++;
-        #}
+        my @addresses;
+        my @results;
 
-        last if $thisip eq $lastip->addr();
+        ( $err, @results ) = getaddrinfo( $hostname, "", { socktype => SOCK_RAW } );
+        while ( my $ai = shift @results ) {
+            my ( $err, $ipaddr ) = getnameinfo( $ai->{addr}, NI_NUMERICHOST, NIx_NOSERV );
+            push @addresses, $ipaddr unless $err;
+        }
+
+        my $found = scalar grep( /^$thisip$/, @addresses );
+        if ( $found == 0 ) {
+            fail("No PTR present for $hostname -> $thisip.");
+            $errors++;
+        } else {
+            okay("PTR present for $thisip -> $hostname.");
+            $okays++;
+        }
+
     }
 }
 
