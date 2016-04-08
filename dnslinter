@@ -58,15 +58,14 @@ foreach my $range (@ipranges) {
     my $lastip    = $thisrange->last();
     my $ipcount   = $thisrange->num();
 
-    warn $ipcount;
-
     while ( $ipcount > 0 ) {
         $ipcount--;
         my $thisip = $ip->short();
 
         verbose("Pondering $thisip.");
         $tested++;
-        my ( $err, $hostname, $port ) = getnameinfo( pack_sockaddr_in6( 0, inet_pton( AF_INET6, $thisip ) ), NI_NAMEREQD, NI_NAMEREQD );
+
+        my ( $err, $hostname ) = _ip_to_hostname($thisip);
         unless ($err) {
             verbose("$thisip resolves to $hostname");
         }
@@ -117,6 +116,17 @@ if ($summary) {
     }
     $text .= ".";
     say $text;
+}
+
+sub _ip_to_hostname {
+    my $ip = shift;
+    my ( $error, $hostname );
+    if ( $ip =~ /:/ ) {
+        ( $error, $hostname ) = getnameinfo( pack_sockaddr_in6( 0, inet_pton( AF_INET6, $ip ) ), NI_NAMEREQD, NI_NAMEREQD );
+    } else {
+        ( $error, $hostname ) = getnameinfo( pack_sockaddr_in( 0, inet_pton( AF_INET, $ip ) ), NI_NAMEREQD, NI_NAMEREQD );
+    }
+    return ( $error, $hostname );
 }
 
 sub get_netblocks {
