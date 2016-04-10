@@ -10,6 +10,7 @@ use Getopt::Long::Descriptive;
 use IO::All;
 use NetAddr::IP qw(:lower);
 use Net::Oping;
+use Regexp::Common qw /net/;
 use Socket qw(:DEFAULT getaddrinfo getnameinfo inet_pton NI_NAMEREQD NI_NUMERICHOST NIx_NOSERV);
 
 my ( $opt, $usage ) = describe_options(
@@ -125,10 +126,12 @@ if ($summary) {
 sub _ip_to_hostname {
     my $ip = shift;
     my ( $error, $hostname );
-    if ( $ip =~ /:/ ) {
+    if ( $ip =~ $RE{net}{IPv6} ) {
         ( $error, $hostname ) = getnameinfo( pack_sockaddr_in6( 0, inet_pton( AF_INET6, $ip ) ), NI_NAMEREQD, NI_NAMEREQD );
-    } else {
+    } elsif ( $ip =~ $RE{net}{IPv4} ) {
         ( $error, $hostname ) = getnameinfo( pack_sockaddr_in( 0, inet_pton( AF_INET, $ip ) ), NI_NAMEREQD, NI_NAMEREQD );
+    } else {
+        die "$ip is not an IPv4 or IPv6 address.";
     }
     return ( $error, $hostname );
 }
