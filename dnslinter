@@ -9,7 +9,7 @@ use File::Basename;
 use Getopt::Long::Descriptive;
 use IO::All;
 use NetAddr::IP qw(:lower);
-use Net::Ping;
+use Net::Oping;
 use Socket qw(:DEFAULT getaddrinfo getnameinfo inet_pton NI_NAMEREQD NI_NUMERICHOST NIx_NOSERV);
 
 my ( $opt, $usage ) = describe_options(
@@ -29,23 +29,21 @@ my $fail    = $opt->fail;
 my $okay    = $opt->okay;
 my $summary = $opt->summary;
 
-my $pinger;
-
 my $errors      = 0;
 my $okays       = 0;
 my $pingables   = 0;
 my $unpingables = 0;
 my $tested      = 0;
 
-eval {
-    if ($ping) {
-        $pinger = Net::Ping->new( 'icmp', 2 );
+if ($ping) {
+    my $pinger = Net::Oping->new();
+    $pinger->host_add('127.0.0.1');
+    $pinger->ping();
+    my $error = $pinger->get_error();
+    if ( $error =~ /Operation not permitted/ ) {
+        fail('Ping checks require root privilege to run.');
+        exit 1;
     }
-};
-
-if ( $@ =~ /icmp ping requires root privilege/ ) {
-    fail('Ping checks require root privilege to run.');
-    exit 1;
 }
 
 my @ipranges = get_netblocks();
@@ -72,15 +70,20 @@ foreach my $range (@ipranges) {
 
         if ($ping) {
             verbose("Pinging $thisip");
-            my $pinged = $pinger->ping($thisip);
-            $pingables++ if $pinged;
-
-            if ( $pinged && ( !defined $hostname ) ) {
-                fail("$thisip responds to pings but has no PTR.");
-                $errors++;
-                next;
+            my $pinger = Net::Oping->new();
+            $pinger->host_add($thisip);
+            $pinger->ping();
+            my $status = $pinger->get_error();
+            if ( $status eq 'Success' ) {
+                $pingables++;
+                unless ( defined $hostname ) {
+                    fail("$thisip responds to pings but has no PTR.");
+                    $errors++;
+                    next;
+                }
+            } else {
+                $unpingables++;
             }
-            $unpingables++ unless $pinged;
         }
 
         next unless defined $hostname;
@@ -94,6 +97,7 @@ foreach my $range (@ipranges) {
             push @addresses, $ipaddr unless $err;
         }
 
+        print Dumper @addresses;
         my $found = scalar grep( /^$thisip$/, @addresses );
         if ( $found == 0 ) {
             fail("No PTR present for $hostname -> $thisip.");
