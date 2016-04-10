@@ -59,6 +59,7 @@ foreach my $range (@ipranges) {
     while ( $ipcount > 0 ) {
         $ipcount--;
         my $thisip = $ip->short();
+        $ip++;
 
         verbose("Pondering $thisip.");
         $tested++;
@@ -73,8 +74,8 @@ foreach my $range (@ipranges) {
             my $pinger = Net::Oping->new();
             $pinger->host_add($thisip);
             $pinger->ping();
-            my $status = $pinger->get_error();
-            if ( $status eq 'Success' ) {
+            my $dropped = $pinger->get_dropped();
+            if ( $dropped->{$thisip} == 0 ) {
                 $pingables++;
                 unless ( defined $hostname ) {
                     fail("$thisip responds to pings but has no PTR.");
@@ -97,7 +98,6 @@ foreach my $range (@ipranges) {
             push @addresses, $ipaddr unless $err;
         }
 
-        print Dumper @addresses;
         my $found = scalar grep( /^$thisip$/, @addresses );
         if ( $found == 0 ) {
             fail("No PTR present for $hostname -> $thisip.");
