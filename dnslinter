@@ -18,8 +18,10 @@ my ( $opt, $usage ) = describe_options(
     [ 'networks|n=s', 'A comma separated list of networks, or name of a file containing networks, one per line.', { required => 1 } ],
     [ 'ping|p',       'Enable ping checks - requires root.' ],
     [ 'verbose|v',    'Explain what is happening.' ],
-    [ 'fail|f',       'Report failing DNS mappings.',                                                             { default  => 1 } ],
-    [ 'okay|o',       'Report okay DNS mappings.' ],
+    [ 'fail|f',       'Report failing DNS mappings (default).',                                                   { default  => 1 } ],
+    [ 'okay|o',       'Report okay DNS mappings (default).',                                                      { default  => 1 } ],
+    [ 'nofail|F',     'Do not report failing DNS mappings.',                                                      { default  => 0 } ],
+    [ 'nokay|O',      'Do not report okay DNS mappings.',                                                         { default  => 0 } ],
     [ 'summary|s',    'Show a summary of findings.' ],
 );
 
@@ -28,7 +30,17 @@ my $ping    = $opt->ping;
 my $verbose = $opt->verbose;
 my $fail    = $opt->fail;
 my $okay    = $opt->okay;
+my $nofail  = $opt->nofail;
+my $nokay   = $opt->nokay;
 my $summary = $opt->summary;
+
+if ($nofail) {
+    $fail = 0;
+}
+
+if ($nokay) {
+    $okay = 0;
+}
 
 my $errors      = 0;
 my $okays       = 0;
