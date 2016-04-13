@@ -79,7 +79,7 @@ foreach my $range (@ipranges) {
 
         my ( $err, $hostname ) = _ip_to_hostname($thisip);
         unless ($err) {
-            verbose("$thisip resolves to $hostname");
+            okay("$thisip resolves to '$hostname'.");
         }
 
         if ($ping) {
